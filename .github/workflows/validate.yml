@@ -56,23 +56,48 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: packs-repo
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+          # The scope check compares with the base branch.
+          fetch-depth: 0
+      # This job is the required check, so it must always run and report. On a
+      # pull request that changes no pack (docs, tools, other workflows), it
+      # skips the slow part: building the app and importing every pack. A path
+      # filter on the trigger would not do: GitHub leaves a required check that
+      # never started waiting forever. Pushes to main always run in full.
+      - name: Decide whether packs need validating
+        id: scope
+        working-directory: packs-repo
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "origin/$BASE_REF...HEAD" | grep -qE '^(packs/|\.github/workflows/validate\.yml$)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No pack changed in this pull request, so the packs were not re-validated."
+          fi
+      - if: steps.scope.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: precogly/precogly
           ref: ${{ env.PRECOGLY_REF }}
           path: app
       - name: Start the database
+        if: steps.scope.outputs.run == 'true'
         working-directory: app
         run: docker compose up -d db
       # LIBRARIES_PATH is the clone root because the app appends packs/ to it.
       # The mount is read-only: validation and import never write to the packs.
       - name: Validate and import every pack
+        if: steps.scope.outputs.run == 'true'
         working-directory: app
         run: >-
           docker compose run --rm
           -e LIBRARIES_PATH=/packs-under-test
           -v "$GITHUB_WORKSPACE/packs-repo:/packs-under-test:ro"
           backend python -m pytest apps/packs/test_shipped_packs_validate.py
-      - if: failure()
+      - if: failure() && steps.scope.outputs.run == 'true'
         working-directory: app
         run: docker compose logs db
