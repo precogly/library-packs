@@ -73,5 +73,4 @@ has the full steps.
 ## Licence
 
 The packs and tools are under the [Apache License 2.0](LICENSE). Much of the
-content is adapted from third-party sources with their own terms. See
-[NOTICE.md](NOTICE.md).
+content is adapted from third-party sources with their own terms.
