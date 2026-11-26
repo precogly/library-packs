@@ -36,6 +36,8 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: '0.9.13'
+          # No lock file here to key a cache on.
+          enable-cache: false
       - name: Tool tests
         run: uvx --with 'pyyaml>=6,<7' --from 'pytest>=8,<9' pytest tools/tests
       - name: Pack file checks

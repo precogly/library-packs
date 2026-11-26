@@ -3,6 +3,9 @@
 Thanks for helping grow the library. A pack is read by security teams who make
 decisions from it, so a review here cares most about sources and accuracy.
 
+A merged pull request is released at once: every Precogly install sees the
+change on its Libraries page within minutes. Review is the only gate.
+
 The project's [security policy](https://github.com/precogly/precogly/blob/main/SECURITY.md)
 applies here. Report a security problem in a pack (for example a file that should
 not pass the checks) the way the security policy says, not in a public issue.

@@ -4,7 +4,11 @@ Each release of this repo publishes a `catalog.json` and one archive per pack.
 The Precogly app reads `catalog.json` to list the packs on its Libraries page.
 It downloads an archive only when someone previews, validates or imports that pack.
 
-`tools/build_release.py` writes both. The release workflow runs it on every tag.
+`tools/build_release.py` writes both. The release workflow runs it on every
+merge to `main` that changes a pack, and publishes the result as a new release
+named by date: `v2026.11.27.1`, then `v2026.11.27.2` for a second one that day.
+The app reads the latest one from
+`https://github.com/precogly/library-packs/releases/latest/download/catalog.json`.
 
 ## Files in a release
 
@@ -13,9 +17,17 @@ It downloads an archive only when someone previews, validates or imports that pa
 | `catalog.json` | The list of packs, described below. |
 | `<category>__<slug>-<version>.tar.gz` | One pack. Example: `threat-libraries__aws-4.0.0.tar.gz`. |
 
-The app fetches each archive from the same folder as `catalog.json`. It replaces
-the file name in the catalog address with the `archive` value. So a copy of a
-release works anywhere, as long as all its files sit in one folder.
+The app fetches each archive from the release the catalog came from, so a new
+release published between reading the list and downloading a pack cannot mix
+two releases:
+
+- For a catalog read from `.../releases/latest/download/catalog.json`, the
+  archive comes from `.../releases/download/<release>/<archive>`, with
+  `release` taken from the catalog.
+- For any other address, the archive comes from the same folder as
+  `catalog.json`: the app replaces the file name in the address with the
+  `archive` value. So a copy of a release works anywhere, as long as all its
+  files sit in one folder.
 
 ## `catalog.json`
 
@@ -52,7 +64,7 @@ release works anywhere, as long as all its files sit in one folder.
 | Field | Meaning |
 | --- | --- |
 | `catalogVersion` | The format version. It is `1`. It goes up on any breaking change to this file or to the archives. The app refuses a catalog with a version it does not know. |
-| `release` | The release tag the catalog was built for. |
+| `release` | The release tag the catalog was built for. Letters, digits, `.`, `_` and `-` only, starting with a letter or digit, at most 64 characters. The app refuses anything else. |
 | `packs` | One entry per pack, sorted by `path`. |
 
 ### Pack fields

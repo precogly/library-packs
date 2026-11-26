@@ -1,20 +1,35 @@
 name: Release
 
-# Pushing a tag such as v2026.11.0 publishes catalog.json and one archive per
-# pack as a GitHub release. The app reads catalog.json from a pinned tag, so a
-# release is what makes a pack change reachable from the app.
+# Every merge to main that changes a pack publishes a new release: catalog.json
+# and one archive per pack. The app reads the catalog of the latest release
+# (releases/latest/download/catalog.json), so a merged pack reaches every
+# install without anyone pushing a tag. "Run workflow" on the Actions tab makes
+# a release by hand, for example the first one.
+#
+# Releases are named by date in UTC, with a counter for several on one day:
+# v2026.11.27.1, v2026.11.27.2. The workflow creates the tag itself.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths:
+      - 'packs/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# Two merges close together must not both pick the same release name.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
+    # A manual run from another branch must not publish it as the latest packs.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
-      # Needed to create the release and upload its files. This job only.
+      # Needed to create the tag and the release and upload its files. This job only.
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -23,16 +38,31 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: '0.9.13'
+          # No lock file here to key a cache on.
+          enable-cache: false
       - name: Tool tests
         run: uvx --with 'pyyaml>=6,<7' --from 'pytest>=8,<9' pytest tools/tests
       - name: Pack file checks
         run: uv run tools/check_pack_files.py
+      - name: Pick the release name
+        id: name
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          date_part="v$(date -u +%Y.%m.%d)"
+          releases_today=$(git ls-remote --tags origin "refs/tags/${date_part}.*" | wc -l)
+          echo "tag=${date_part}.$((releases_today + 1))" >> "$GITHUB_OUTPUT"
       - name: Build the catalog and archives
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ steps.name.outputs.tag }}
         run: uv run tools/build_release.py --tag "$RELEASE_TAG" --packs-dir packs --output-dir dist
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --generate-notes --title "$RELEASE_TAG"
+          RELEASE_TAG: ${{ steps.name.outputs.tag }}
+        run: >-
+          gh release create "$RELEASE_TAG" dist/*
+          --target "$GITHUB_SHA"
+          --title "$RELEASE_TAG"
+          --generate-notes
+          --latest

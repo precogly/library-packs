@@ -26,14 +26,17 @@ The folder name is the pack's slug, and every pack sits exactly two levels under
 
 1. A pull request here changes a pack and raises its `version`.
 2. CI checks the files and validates every pack with the app's own validator.
-3. A maintainer pushes a release tag, for example `v2026.11.0`. The release
-   workflow publishes `catalog.json` and one archive per pack on that release.
-4. The app reads `catalog.json` from one pinned release and lists every pack on
-   its Libraries page. A pack is downloaded only when someone previews or imports
-   it. Importing a pack imports its dependencies first.
+3. When the pull request is merged, the release workflow publishes a new
+   release named by date, for example `v2026.11.27.1`, with `catalog.json` and
+   one archive per pack. Nobody pushes a tag by hand.
+4. The app reads `catalog.json` from the latest release and lists every pack on
+   its Libraries page. A new or changed pack shows up there within about ten
+   minutes of the merge. A pack is downloaded only when someone previews or
+   imports it. Importing a pack imports its dependencies first.
 
-An app release moves the pinned release. An operator can also point the app at
-another release, or at their own copy, with the `PACK_CATALOG_URL` setting.
+Because a merge reaches every install, the review of the pull request is the
+only gate. An operator who wants a fixed set of packs can point the app at one
+release, or at their own copy, with the `PACK_CATALOG_URL` setting.
 The format is in [docs/catalog-format.md](docs/catalog-format.md).
 
 ## Demo packs in the app
