@@ -84,6 +84,10 @@ two releases:
 | `threatCount` | length of `threats` in `threats.yaml` | `0` |
 | `countermeasureCount` | length of `countermeasures` in `countermeasures.yaml` | `0` |
 | `taxonomyCount` | length of `taxonomies` in `taxonomy.yaml` | `0` |
+| `taxonomyEntryCount` | total `entries` across the `taxonomies` in `taxonomy.yaml` | `0` |
+| `frameworkCount` | length of `frameworks` in `pack.yaml` | `0` |
+| `requirementCount` | total `requirements` across those frameworks | `0` |
+| `templateCount` | number of `.yaml` files in `dfd-templates/` | `0` |
 | `dependsOn` | `pack.depends_on`, unchanged | empty list |
 | `archive` | the archive's file name | |
 | `archiveSize` | the archive's size in bytes | |
@@ -91,6 +95,10 @@ two releases:
 
 The defaults and counts are the same ones the app uses when it reads a pack
 from disk, so a pack looks the same in the list whichever way it arrives.
+
+The last four counts were added after `catalogVersion` 1 was first published.
+They are additive: an app that does not know them ignores them, and an app
+that knows them treats a missing one as `0`.
 
 `dependsOn` entries are written as they appear in `pack.yaml`, for example
 `taxonomies/stride-taxonomy`. The app uses only the slug, the part after the

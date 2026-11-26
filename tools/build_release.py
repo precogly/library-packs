@@ -44,6 +44,26 @@ def _list_length(file_path: Path, key: str) -> int:
         return 0
 
 
+def _read_yaml(file_path: Path) -> dict:
+    if not file_path.exists():
+        return {}
+    try:
+        return yaml.safe_load(file_path.read_text(encoding="utf-8")) or {}
+    except Exception:
+        return {}
+
+
+def _nested_count(document: dict, outer_key: str, inner_key: str) -> tuple[int, int]:
+    """(number of outer items, total of their inner lists), e.g. frameworks and requirements."""
+    outer_items = document.get(outer_key) or []
+    if not isinstance(outer_items, list):
+        return 0, 0
+    inner_total = sum(
+        len(item.get(inner_key) or []) for item in outer_items if isinstance(item, dict)
+    )
+    return len(outer_items), inner_total
+
+
 def find_pack_dirs(packs_dir: Path) -> list[Path]:
     """Every packs/<category>/<slug> folder that holds a pack.yaml, sorted."""
     return sorted(pack_yaml.parent for pack_yaml in packs_dir.glob("*/*/pack.yaml"))
@@ -112,6 +132,11 @@ def catalog_entry_for(pack_dir: Path, packs_dir: Path, output_dir: Path) -> dict
     archive_path = output_dir / archive_name
 
     write_pack_archive(pack_dir, archive_path)
+    framework_count, requirement_count = _nested_count(pack_document or {}, "frameworks", "requirements")
+    _, taxonomy_entry_count = _nested_count(
+        _read_yaml(pack_dir / "taxonomy.yaml"), "taxonomies", "entries"
+    )
+    template_count = len(list((pack_dir / "dfd-templates").glob("*.yaml")))
 
     return {
         "slug": pack_slug,
@@ -129,6 +154,10 @@ def catalog_entry_for(pack_dir: Path, packs_dir: Path, output_dir: Path) -> dict
             pack_dir / "countermeasures.yaml", "countermeasures"
         ),
         "taxonomyCount": _list_length(pack_dir / "taxonomy.yaml", "taxonomies"),
+        "taxonomyEntryCount": taxonomy_entry_count,
+        "frameworkCount": framework_count,
+        "requirementCount": requirement_count,
+        "templateCount": template_count,
         "dependsOn": pack_meta.get("depends_on") or [],
         "archive": archive_name,
         "archiveSize": archive_path.stat().st_size,

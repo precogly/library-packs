@@ -143,3 +143,49 @@ def test_main_writes_the_output(packs_dir: Path, tmp_path: Path):
     )
     assert (output_dir / "catalog.json").exists()
     assert main(["--tag", "v1", "--packs-dir", str(tmp_path / "missing")]) == 1
+
+
+def test_counts_for_standards_taxonomies_and_templates(packs_dir: Path, tmp_path: Path):
+    standard_dir = write_pack(
+        packs_dir,
+        "standards",
+        "cra",
+        extra_pack_lines=(
+            "frameworks:\n"
+            "- slug: cra-2024\n"
+            "  requirements:\n"
+            "  - {section_code: A1}\n"
+            "  - {section_code: A2}\n"
+            "- slug: cra-annex\n"
+            "  requirements:\n"
+            "  - {section_code: B1}\n"
+        ),
+    )
+    taxonomy_dir = write_pack(packs_dir, "taxonomies", "cwe")
+    (taxonomy_dir / "taxonomy.yaml").write_text(
+        "taxonomies:\n"
+        "  - slug: cwe\n"
+        "    entries: [{external_id: CWE-1}, {external_id: CWE-2}, {external_id: CWE-3}]\n"
+    )
+    library_dir = write_pack(packs_dir, "threat-libraries", "aws")
+    (library_dir / "dfd-templates").mkdir()
+    (library_dir / "dfd-templates" / "one.yaml").write_text("template: {slug: one}\n")
+    (library_dir / "dfd-templates" / "two.yaml").write_text("template: {slug: two}\n")
+    assert standard_dir.exists()
+
+    catalog = build_release("v1", packs_dir, tmp_path / "dist")
+    counts = {
+        entry["slug"]: (
+            entry["frameworkCount"],
+            entry["requirementCount"],
+            entry["taxonomyEntryCount"],
+            entry["templateCount"],
+        )
+        for entry in catalog["packs"]
+    }
+
+    assert counts == {
+        "cra": (2, 3, 0, 0),
+        "cwe": (0, 0, 3, 0),
+        "aws": (0, 0, 0, 2),
+    }
