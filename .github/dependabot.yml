@@ -1,0 +1,26 @@
+version: 2
+
+# Only GitHub Actions: the tools use PyYAML and pytest through uv with a version
+# range, and the packs are data. Same rules as precogly/precogly:
+# - majors are ignored. They are migrations, done by hand when chosen.
+# - a release waits 21 days before it is proposed (cooldown). Security updates
+#   are a repository setting and are not delayed.
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 21
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      github-actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore"
+      include: "scope"

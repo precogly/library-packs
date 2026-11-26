@@ -1,0 +1,51 @@
+name: New pack
+description: Propose a new pack (a taxonomy, standard, threat library or worksheet)
+title: "[New pack]: "
+labels: ["new-pack"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Pack name
+      placeholder: "For example: Oracle Cloud"
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - taxonomies
+        - standards
+        - threat-libraries
+        - worksheets
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: What it covers
+      description: Components, threats, requirements or entries, and roughly how many.
+    validations:
+      required: true
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources and their licences
+      description: Where the content comes from, and the licence or terms of each source.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Other packs this one maps to (for example stride-taxonomy, cwe, owasp-asvs).
+    validations:
+      required: false
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to write this pack and open a pull request.
+          required: false

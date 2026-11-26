@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: A problem with the Precogly app
+    url: https://github.com/precogly/precogly/issues/new/choose
+    about: Bugs and features in the app itself belong in precogly/precogly.
+  - name: Discussions and questions
+    url: https://github.com/precogly/precogly/discussions
+    about: Ask questions or discuss an idea for a pack before writing it.

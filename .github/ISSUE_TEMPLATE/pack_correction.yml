@@ -1,0 +1,34 @@
+name: Pack correction
+description: Report a wrong, missing or outdated entry in an existing pack
+title: "[Correction]: "
+labels: ["correction"]
+body:
+  - type: input
+    id: pack
+    attributes:
+      label: Pack
+      description: The pack slug or folder.
+      placeholder: "threat-libraries/aws"
+    validations:
+      required: true
+  - type: input
+    id: entry
+    attributes:
+      label: Entry
+      description: The id of the component, threat, countermeasure, requirement or mapping.
+      placeholder: "s3-public-bucket"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: A link that shows the correct content.
+    validations:
+      required: true

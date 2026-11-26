@@ -1,0 +1,76 @@
+name: Validate
+
+# Runs on pull requests from forks too, so it never uses pull_request_target,
+# never asks for write permissions and never reads a secret. The pack files are
+# data, and the only code that runs is this repo's tools and a pinned app.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  # The precogly/precogly commit whose validator checks the packs. Pinned so a
+  # change in the app cannot change this repo's merge gate without a deliberate
+  # edit here. c9f0834 is app main when the repos were split; its shipped-packs
+  # test walks the four category folders this repo has.
+  # TODO: move the pin to the v0.5.0 tag once it exists. That release also brings
+  # the dependency-ordered import in the shipped-packs test.
+  PRECOGLY_REF: c9f083453aa444d607553edede07de3ad24e6b7d
+
+jobs:
+  # Safety and layout checks that need no app: file types, symlinks, SVG
+  # content, sizes, folder layout, slugs, and a version bump on every change.
+  files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The version check compares with the base branch, which a shallow
+          # clone does not fetch.
+          fetch-depth: 0
+      # Pinned to an exact release: setup-uv stopped publishing floating major
+      # tags after v7, so @v10 does not resolve.
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: '0.9.13'
+      - name: Tool tests
+        run: uvx --with 'pyyaml>=6,<7' --from 'pytest>=8,<9' pytest tools/tests
+      - name: Pack file checks
+        run: uv run tools/check_pack_files.py
+      - name: Version bumps
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: uv run tools/check_version_bumps.py "origin/$BASE_REF"
+
+  # Every pack validates and imports with the app's own validator, with zero
+  # errors and zero warnings. This is the required check.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: packs-repo
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: precogly/precogly
+          ref: ${{ env.PRECOGLY_REF }}
+          path: app
+      - name: Start the database
+        working-directory: app
+        run: docker compose up -d db
+      # LIBRARIES_PATH is the clone root because the app appends packs/ to it.
+      # The mount is read-only: validation and import never write to the packs.
+      - name: Validate and import every pack
+        working-directory: app
+        run: >-
+          docker compose run --rm
+          -e LIBRARIES_PATH=/packs-under-test
+          -v "$GITHUB_WORKSPACE/packs-repo:/packs-under-test:ro"
+          backend python -m pytest apps/packs/test_shipped_packs_validate.py
+      - if: failure()
+        working-directory: app
+        run: docker compose logs db

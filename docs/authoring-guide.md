@@ -1,4 +1,4 @@
-# Library Packs — Author Guide
+# Library Packs: Author Guide
 
 Library packs are modular bundles of threat-modeling content (components, threats, countermeasures, DFD templates, and compliance frameworks) that organizations install into Precogly. This guide covers everything you need to create a pack.
 
@@ -18,10 +18,10 @@ Library packs are modular bundles of threat-modeling content (components, threat
 
 ## Directory Structure
 
-Every pack is a directory under one of the category folders in `libraries/packs/`:
+Every pack is a directory under one of the category folders in `packs/`:
 
 ```
-libraries/packs/
+packs/
 ├── taxonomies/          # Classification systems (STRIDE, CWE, CAPEC, ATT&CK)
 ├── standards/           # Compliance frameworks (NIST CSF, OWASP, SOC 2, etc.)
 ├── threat-libraries/    # Technology-specific threats (AWS, Azure, GCP, etc.)
@@ -97,7 +97,7 @@ pack:
 
 ### Dependencies
 
-Dependencies use path-format strings relative to the `libraries/packs/` root:
+Dependencies use path-format strings relative to the `packs/` root:
 
 ```yaml
 depends_on:
@@ -105,13 +105,13 @@ depends_on:
   - taxonomies/cwe
 ```
 
-The slug is extracted from the last path segment (e.g., `taxonomies/stride-taxonomy` resolves to slug `stride-taxonomy`). Plain slugs (without `/`) also work for backward compatibility.
+Only the slug counts: the app takes the last path segment (`taxonomies/stride-taxonomy` resolves to slug `stride-taxonomy`) and ignores the folder part. Plain slugs (without `/`) also work. This matters because the app bundles a few demo packs in different folders (`demo-taxonomies/stride-taxonomy`), and a dependency must find them too.
 
 ### Pack format versioning
 
 `schema_version` declares which version of the pack format a pack uses. This is separate from the pack's content `version` (which tracks changes to threats, countermeasures, etc.).
 
-- **`schema_version: 1`** — The current and only format version.
+- **`schema_version: 1`**: the current and only format version.
 - When the app loads a pack, it checks `schema_version` against its set of supported versions. If the version is unsupported, the pack is rejected with a validation error.
 - If `schema_version` is missing, a validation warning is emitted (the pack can still be imported). This allows backwards compatibility for external packs that haven't adopted the field yet.
 
@@ -670,8 +670,8 @@ When your pack depends on another, you can reference its items using qualified s
 mappings:
   - threat: my-custom-threat
     countermeasures:
-      - my-local-countermeasure        # same pack — plain id
-      - aws/s3-block-public-access     # different pack — qualified slug
+      - my-local-countermeasure        # same pack: plain id
+      - aws/s3-block-public-access     # different pack: qualified slug
 ```
 
 Declare the dependency in `pack.yaml`:

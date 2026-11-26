@@ -1,0 +1,38 @@
+name: Release
+
+# Pushing a tag such as v2026.11.0 publishes catalog.json and one archive per
+# pack as a GitHub release. The app reads catalog.json from a pinned tag, so a
+# release is what makes a pack change reachable from the app.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to create the release and upload its files. This job only.
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Pinned to an exact release: setup-uv stopped publishing floating major
+      # tags after v7, so @v10 does not resolve.
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: '0.9.13'
+      - name: Tool tests
+        run: uvx --with 'pyyaml>=6,<7' --from 'pytest>=8,<9' pytest tools/tests
+      - name: Pack file checks
+        run: uv run tools/check_pack_files.py
+      - name: Build the catalog and archives
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: uv run tools/build_release.py --tag "$RELEASE_TAG" --packs-dir packs --output-dir dist
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --generate-notes --title "$RELEASE_TAG"
