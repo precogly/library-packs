@@ -20,7 +20,7 @@ accept on your first pull request.
 - **Sources.** Each new or changed threat, countermeasure, requirement and
   mapping cites where it comes from. A link in the PR description is fine.
 - **Licence.** Say what licence or terms the source has, and that they allow
-  this use. Add a row to [NOTICE.md](NOTICE.md) for a new source.
+  this use.
 - **Checkable mappings.** A reviewer must be able to check a mapping (threat to
   CWE, countermeasure to ASVS) against the cited source.
 - **A version bump.** Raise `version` in `pack.yaml` on every change. The app
